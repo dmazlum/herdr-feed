@@ -8,9 +8,10 @@
   [![CI](https://img.shields.io/github/actions/workflow/status/dmazlum/herdr-feed/ci.yml?style=flat-square&label=CI)](https://github.com/dmazlum/herdr-feed/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/dmazlum/herdr-feed?style=flat-square)](https://github.com/dmazlum/herdr-feed/releases)
   ![macOS on Apple silicon](https://img.shields.io/badge/macOS-Apple%20silicon-555?style=flat-square&logo=apple)
+  [![Linux: experimental](https://img.shields.io/badge/Linux-experimental%2C%20help%20wanted-e08a00?style=flat-square&logo=linux&logoColor=white)](#linux-experimental)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-  [How it works](#how-it-works) • [Install](#install) • [Usage](#usage) • [Sources](#sources) • [Video](#how-video-works) • [Config](#config) • [FAQ](#faq)
+  [How it works](#how-it-works) • [Install](#install) • [Usage](#usage) • [Linux](#linux-experimental) • [Sources](#sources) • [Video](#how-video-works) • [Config](#config) • [FAQ](#faq)
 </div>
 
 <p align="center"><img src="assets/demo.gif" alt="An agent gets a prompt, the feed slides in beside it and plays a video, then a tip card; when the agent is done the feed slides away"></p>
@@ -32,7 +33,8 @@ goes away, so your attention goes back to the agent.
 A small Herdr mod watches the agents Herdr already tracks, so there are no per-agent hooks to
 install: Claude Code, Codex, OpenCode, Pi and every other agent Herdr recognizes work the same way.
 
-`cmd-shift-e` puts a small switch window on screen (`⠿ ● feed on`). While it is open:
+`cmd-shift-e` (`ctrl-shift-e` on Linux) puts a small switch window on screen (`⠿ ● feed on`).
+While it is open:
 
 | Event | Pane |
 |---|---|
@@ -42,7 +44,7 @@ install: Claude Code, Codex, OpenCode, Pi and every other agent Herdr recognizes
 | You move to another agent | Closes, and opens beside that one if it is working |
 | `q` in the feed, or no unseen cards left | Stays closed until that agent's next turn |
 | 30 cards shown | Loads the next batch of unseen cards |
-| Switch clicked, or `cmd-alt-e` | Turns the feed off (and on again) |
+| Switch clicked, or `cmd-alt-e` (`ctrl-alt-e` on Linux) | Turns the feed off (and on again) |
 
 Each batch goes video, image card, text card, round-robin across sources, so one feed doesn't take
 over, and a card you've seen doesn't come back. When the cache is older than `refresh_minutes`,
@@ -50,7 +52,8 @@ opening the feed starts a fetch in the background.
 
 ## Install
 
-You need a Mac with Apple silicon, the [Herdr desktop app](https://herdr.dev), a coding agent,
+You need a Mac with Apple silicon (or Linux, [experimental](#linux-experimental)), the
+[Herdr desktop app](https://herdr.dev), a coding agent,
 [Rust](https://rustup.rs) and Python 3 (the installer merges the app's `keys.json` with it).
 For images and videos: `ffmpeg` and `yt-dlp` (`brew install ffmpeg yt-dlp`).
 
@@ -63,8 +66,10 @@ git clone https://github.com/dmazlum/herdr-feed && cd herdr-feed
 ./install.sh
 ```
 
-From a release: download `herdr-feed-<version>-aarch64-apple-darwin.tar.gz` from
-[Releases](https://github.com/dmazlum/herdr-feed/releases), unpack it and run `./install.sh` inside.
+From a release: download `herdr-feed-<version>-<target>.tar.gz` from
+[Releases](https://github.com/dmazlum/herdr-feed/releases) (`aarch64-apple-darwin` for a Mac;
+`x86_64-unknown-linux-gnu` or `aarch64-unknown-linux-gnu` for Linux), unpack it and run
+`./install.sh` inside.
 Keep the folder where it is: `~/.local/bin/herdr-feed` links to the binary in it.
 
 <details>
@@ -74,12 +79,12 @@ Keep the folder where it is: `~/.local/bin/herdr-feed` links to the binary in it
 - Tells you if `ffmpeg` or `yt-dlp` is missing.
 - Runs `scripts/install-mod.sh`, which copies `mods/herdr-feed` into the app's mods folder
   (`~/.config/herdr-app/mods`, or `HERDR_APP_HOME`), adds `cmd-shift-e` and `cmd-alt-e` to its
-  `keys.json` (backed up to `keys.json.bak-herdr-feed` first; a key already bound to something
+  `keys.json` (`ctrl-shift-e` and `ctrl-alt-e` on Linux, from `keys.linux.json`) (backed up to `keys.json.bak-herdr-feed` first; a key already bound to something
   else is left alone) and checks the mod with `herdr-app check`. Running it again changes nothing.
 - Runs a first `herdr-feed fetch`.
 </details>
 
-Then press `cmd-shift-e` in Herdr. The switch window remembers where you drop it and comes back
+Then press `cmd-shift-e` (`ctrl-shift-e` on Linux) in Herdr. The switch window remembers where you drop it and comes back
 on the next start until you close it.
 
 ## Usage
@@ -107,6 +112,21 @@ herdr-feed state KEY running|paused|closed
 herdr-feed resize AGENT FEED          give FEED pane_ratio% of the row it shares with AGENT
 herdr-feed list                       print cached items
 ```
+
+## Linux (experimental)
+
+herdr-feed builds and its tests pass on Linux, and releases include Linux packages, but **nobody
+has run it in the Herdr desktop app on Linux yet**. What should work the same: the mod (it only
+uses Herdr's own APIs), opening, pausing and closing the feed, and its width. What's unconfirmed:
+whether images and videos show in the Linux app's terminal, which draws them through the kitty
+graphics protocol as on macOS.
+
+On Linux the keys are `ctrl-shift-e` and `ctrl-alt-e`, and `o` opens links with `xdg-open`.
+
+**Help wanted.** If you use Herdr on Linux, please try it and
+[open an issue](https://github.com/dmazlum/herdr-feed/issues/new?template=bug_report.yml) either
+way: your distribution and desktop, `herdr-app --version`, and a screenshot of the feed showing a
+card with a picture and a video card. A screenshot that it works is as useful as a bug report.
 
 ## Sources
 
@@ -189,6 +209,13 @@ API: if a Herdr update changes it, the feed stays at half width until herdr-feed
 
 Check `ffmpeg` and `yt-dlp` are on your `PATH`. YouTube changes often, so `brew upgrade yt-dlp`
 fixes most failures. Video cards say **▶ VIDEO** in their top right corner.
+</details>
+
+<details>
+<summary>Does it work on Linux?</summary>
+
+Probably, but it's untested in the Herdr app on Linux: see [Linux (experimental)](#linux-experimental),
+and please tell us how it goes.
 </details>
 
 <details>

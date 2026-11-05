@@ -1044,7 +1044,7 @@ impl Pane {
                         KeyCode::Char('o') | KeyCode::Enter => {
                             let u = &self.queue[self.i].url;
                             if u.starts_with("https://") || u.starts_with("http://") {
-                                let _ = Command::new("open").arg(u).spawn();
+                                let _ = Command::new(OPENER).arg(u).spawn();
                             }
                         }
                         _ => {}
@@ -1087,6 +1087,13 @@ impl Pane {
         }
     }
 }
+
+/// The system's "open this link in the browser" command.
+const OPENER: &str = if cfg!(target_os = "macos") {
+    "open"
+} else {
+    "xdg-open"
+};
 
 /// The keys, spelled out as much as `room` allows: the styled hint and its width in cells.
 fn key_hint(room: usize) -> (String, usize) {

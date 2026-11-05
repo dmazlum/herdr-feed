@@ -1,0 +1,6 @@
+{
+  "global": {
+    "ctrl-shift-e": "mod.open:herdr-feed",
+    "ctrl-alt-e": "herdr-feed.toggle"
+  }
+}

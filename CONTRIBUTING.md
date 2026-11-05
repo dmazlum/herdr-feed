@@ -5,7 +5,8 @@ open an issue first so we can agree on the shape.
 
 ## Setup
 
-You need a Mac with Apple silicon, the Herdr desktop app, a coding agent, a
+You need a Mac with Apple silicon (or Linux, where support is experimental and
+testing is the most useful help right now), the Herdr desktop app, a coding agent, a
 recent stable Rust (edition 2024), Node 20+ for the mod's tests, and `ffmpeg`
 and `yt-dlp` for media.
 

@@ -9,18 +9,25 @@ body:
       description: What you did, what you expected, and what you saw instead. A screenshot of the pane helps a lot.
     validations:
       required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: System
+      options: [macOS, Linux (experimental)]
+    validations:
+      required: true
   - type: input
     id: versions
     attributes:
       label: Versions
-      description: "Output of: sw_vers -productVersion; herdr-app --version; ffmpeg -version | head -1; yt-dlp --version"
+      description: "macOS: sw_vers -productVersion · Linux: your distribution and desktop · then: herdr-app --version; ffmpeg -version | head -1; yt-dlp --version"
     validations:
       required: true
   - type: dropdown
     id: area
     attributes:
       label: Area
-      options: [Pane / cards, Video, Images, Mod / opening and closing, Pane width, Fetching / sources, Install]
+      options: [Pane / cards, Video, Images, Mod / opening and closing, Pane width, Fetching / sources, Install, Linux report (works / doesn't)]
     validations:
       required: true
   - type: textarea

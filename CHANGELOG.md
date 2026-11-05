@@ -4,6 +4,10 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 
 ## [Unreleased]
 
+### Added
+
+- Linux support, experimental: release packages for `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`, `ctrl-shift-e` / `ctrl-alt-e` keys from `keys.linux.json` (the installer picks the file for the platform), and links opened with `xdg-open`. Not yet tried in the Herdr app on Linux; reports welcome.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

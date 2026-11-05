@@ -1,13 +1,16 @@
 #!/bin/sh
 # Put the herdr-feed mod into the Herdr desktop app and merge its keys, or take
 # both out again with --remove. The app's home follows HERDR_APP_HOME
-# (default ~/.config/herdr-app). keys.json is backed up to
+# (default ~/.config/herdr-app). The keys come from keys.json on macOS and
+# keys.linux.json elsewhere. The app's keys.json is backed up to
 # keys.json.bak-herdr-feed before it changes; running this again changes nothing.
 set -e
 cd "$(dirname "$0")/.."
 home=${HERDR_APP_HOME:-$HOME/.config/herdr-app}
 mods="$home/mods"
 remove=
+ours=keys.json
+[ "$(uname -s)" = Darwin ] || ours=keys.linux.json
 case "${1:-}" in
   "") ;;
   --remove) remove=1 ;;
@@ -22,7 +25,7 @@ fi
 # keys.json: add or drop our bindings, leaving every other one as it is
 keys() {
   [ -f "$home/keys.json" ] || [ -z "$remove" ] || return 0
-  python3 - "$home/keys.json" "$PWD/keys.json" "$remove" <<'PY'
+  python3 - "$home/keys.json" "$PWD/$ours" "$remove" <<'PY'
 import json, os, shutil, sys
 path, ours_path, remove = sys.argv[1], sys.argv[2], sys.argv[3] == "1"
 ours = json.load(open(ours_path))["global"]

@@ -23,8 +23,9 @@ size the feed. The mod itself runs only that program (`exec`) and app commands.
    that path.
 4. Copy `mods/herdr-feed` to `~/.config/herdr-app/mods/herdr-feed` and run
    `herdr-app check ~/.config/herdr-app/mods/herdr-feed`. It must pass.
-5. Merge `keys.json` into `~/.config/herdr-app/keys.json`. Ask the person first if `cmd-shift-e`
-   or `cmd-alt-e` is already bound.
+5. Merge `keys.json` (macOS) or `keys.linux.json` (Linux) into `~/.config/herdr-app/keys.json`.
+   Ask the person first if `cmd-shift-e` / `cmd-alt-e` (Linux: `ctrl-shift-e` / `ctrl-alt-e`) is
+   already bound.
 6. Run `~/.local/bin/herdr-feed fetch` once (about a minute; it prints a count per source and
    `videos N/M cached`).
 7. Tell the person to press `cmd-shift-e`, then send their agent a prompt.
@@ -113,6 +114,8 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
 - `terminal.open`'s `name` is not kept on the terminal; find the feed by its argv.
 - The pane must only read its state file while the mod drives it (`--driven`); a pane writing it on
   start races the mod's `paused` / `closed`.
+- Linux is experimental: links open with `xdg-open` instead of `open`, the keys use `ctrl`
+  instead of `cmd`, and images and video in the Linux app's terminal haven't been confirmed.
 - Herdr's shipped layouts are read-only, so the mod runs as a kept window rather than a layout
   block. Closing the window stops it.
 - Two fetches can overlap; partial clips (`*.part.mp4`) of another fetch must not be deleted.

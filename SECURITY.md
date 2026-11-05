@@ -21,7 +21,8 @@ Fixes go into the latest release. Update by installing the new release (or
 
 - `~/.config/herdr-app/mods/herdr-feed/`: the mod. Herdr mods are trusted code
   and run commands; this one runs only `~/.local/bin/herdr-feed`.
-- `~/.config/herdr-app/keys.json`: two bindings (`cmd-shift-e`, `cmd-alt-e`).
+- `~/.config/herdr-app/keys.json`: two bindings (`cmd-shift-e`, `cmd-alt-e`; on Linux
+  `ctrl-shift-e`, `ctrl-alt-e`).
   The file is backed up to `keys.json.bak-herdr-feed` before it changes.
 - herdr-core's `herdr-app` document (the app's pane layout): `herdr-feed resize`
   changes the `size.weight` of the agent's and the feed's panes, with a
