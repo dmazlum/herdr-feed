@@ -13,7 +13,7 @@
   [How it works](#how-it-works) • [Install](#install) • [Usage](#usage) • [Sources](#sources) • [Video](#how-video-works) • [Config](#config) • [FAQ](#faq)
 </div>
 
-<p align="center"><img src="assets/screenshot.png" width="360" alt="The feed beside a working agent: a Two Minute Papers video card"></p>
+<p align="center"><img src="preview.png" alt="herdr-feed beside a working Claude Code agent in Herdr: a TLDR Tech card, the key hint and the switch window"></p>
 
 While your agent thinks, you wait. herdr-feed fills that wait: a pane opens beside the agent and
 rotates short tech cards (news, tips, product launches, YouTube and Reddit videos). Images and
@@ -52,7 +52,9 @@ You need a Mac with Apple silicon, the [Herdr desktop app](https://herdr.dev), a
 [Rust](https://rustup.rs) and Python 3 (the installer merges the app's `keys.json` with it).
 For images and videos: `ffmpeg` and `yt-dlp` (`brew install ffmpeg yt-dlp`).
 
-From a checkout:
+In Herdr, ask your agent to add `github.com/dmazlum/herdr-feed`: it reads
+[`RECIPE.md`](RECIPE.md) and every file, builds the program, copies `mods/herdr-feed`, merges
+[`keys.json`](keys.json) and checks the mod. Or by hand, from a checkout:
 
 ```sh
 git clone https://github.com/dmazlum/herdr-feed && cd herdr-feed
