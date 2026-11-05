@@ -4,6 +4,13 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-05
+
+### Added
+
+- The [Herdr blog](https://herdr.dev/blog/) as a source. It has no feed, so its post list is read from the page (title, date, summary); the cover comes from each post's `og:image`.
+- `HERDR_FEED_ONLY` also takes a source name, such as `HERDR_FEED_ONLY="Herdr Blog" herdr-feed pane`, to try one source's cards.
+
 ## [0.1.2] - 2026-11-05
 
 ### Changed
@@ -46,7 +53,8 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 - A very small pane no longer underflows the layout math.
 - The card is redrawn when the pane changes size, even where the host sends the program no resize signal (Herdr's split resize doesn't), instead of keeping a layout for the old width.
 
-[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/dmazlum/herdr-feed/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/dmazlum/herdr-feed/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/dmazlum/herdr-feed/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dmazlum/herdr-feed/releases/tag/v0.1.0

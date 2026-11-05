@@ -536,6 +536,7 @@ fn accent(it: &Item) -> (u8, u8, u8) {
         "Hugging Face" => (255, 210, 30),
         "Vercel" => (235, 235, 235),
         "Cloudflare" => (246, 130, 31),
+        "Herdr Blog" => (255, 112, 67),
         _ if it.kind == "video" => (255, 50, 50),
         "tldr" => (90, 220, 140),
         s if s.starts_with("r/") => (255, 90, 40),

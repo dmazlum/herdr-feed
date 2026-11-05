@@ -762,6 +762,37 @@ fn og_image(url: &str) -> Option<String> {
     })
 }
 
+/// The Herdr blog has no feed: read its post list (each post is a link with a <time>, an <h2>
+/// title and a <p> summary).
+fn src_herdr_blog() -> Result<Vec<Item>> {
+    Ok(parse_herdr_blog(&get("https://herdr.dev/blog/")?))
+}
+
+fn parse_herdr_blog(html: &str) -> Vec<Item> {
+    static R: OnceLock<Regex> = OnceLock::new();
+    let r = R.get_or_init(|| {
+        re(r#"(?s)<a href="(/blog/[a-z0-9-]+/)"[^>]*>\s*<time[^>]*datetime="([^"]+)"[^>]*>.*?</time>.*?<h2[^>]*>(.*?)</h2>\s*(?:<p[^>]*>(.*?)</p>)?"#)
+    });
+    r.captures_iter(html)
+        .take(12)
+        .map(|c| {
+            item(
+                "Herdr Blog",
+                &strip_html(&c[3], 200),
+                &format!("https://herdr.dev{}", &c[1]),
+                c.get(4)
+                    .map(|m| strip_html(m.as_str(), 400))
+                    .unwrap_or_default(),
+                None,
+                None,
+                "news",
+                parse_date(&c[2]),
+                None,
+            )
+        })
+        .collect()
+}
+
 fn src_devto() -> Result<Vec<Item>> {
     let v = jget("https://dev.to/api/articles?top=1&per_page=15")?;
     Ok(v.as_array()
@@ -812,6 +843,7 @@ const SOURCES: &[Source] = &[
     ("reddit", src_reddit),
     ("trending", src_trending),
     ("devto", src_devto),
+    ("herdr", src_herdr_blog),
     ("tldr", src_tldr_pages),
     ("til", src_til),
 ];
@@ -1045,6 +1077,25 @@ mod tests {
         assert_eq!(safe_url("data:image/png;base64,xx"), "");
         assert_eq!(safe_url("https://x.dev/a b.png"), "");
         assert_eq!(safe_url(" https://x.dev/a.png "), "https://x.dev/a.png");
+    }
+
+    #[test]
+    fn reads_the_herdr_blog_post_list() {
+        let html = r#"<a href="/blog/" class="x">Blog</a>
+<a href="/blog/connecting-the-machines/" class="astro-5tznm7mj"> <time class="mono astro-5tznm7mj" datetime="2026-09-08T00:00:00.000Z">Sep 8, 2026</time> <div class="astro-5tznm7mj"> <h2 class="astro-5tznm7mj">Connecting the machines</h2> <p class="astro-5tznm7mj">Work across Local &amp; saved SSH machines.</p> </div> </a>
+<a href="/blog/herdr-0-6-3/" class="astro-5tznm7mj"> <time datetime="2026-05-27T00:00:00.000Z">May 27, 2026</time> <div> <h2>Herdr 0.6.3: session persistence</h2> </div> </a>"#;
+        let items = parse_herdr_blog(html);
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].title, "Connecting the machines");
+        assert_eq!(
+            items[0].url,
+            "https://herdr.dev/blog/connecting-the-machines/"
+        );
+        assert_eq!(items[0].body, "Work across Local & saved SSH machines.");
+        assert_eq!(items[0].source, "Herdr Blog");
+        assert!(items[0].ts > 1.7e9);
+        assert_eq!(items[1].title, "Herdr 0.6.3: session persistence");
+        assert_eq!(items[1].body, "");
     }
 
     #[test]

@@ -138,7 +138,7 @@ card with a picture and a video card. A screenshot that it works is as useful as
 - **News:** Hacker News, Show HN, Lobsters, TLDR Tech/AI, The Verge, Ars Technica, TechCrunch, 9to5Mac, Hackaday, Changelog, JavaScript Weekly, This Week in Rust, GitHub Trending, dev.to
 - **Reddit:** r/programming, ClaudeAI, LocalLLaMA, commandline, rust, webdev, neovim, selfhosted, MachineLearning (one combined RSS request; Reddit rate-limits hard)
 - **Products:** Product Hunt
-- **Blogs:** Simon Willison, GitHub, OpenAI, Hugging Face, Vercel, Cloudflare, Rust, Latent Space, Smashing, Josh Comeau
+- **Blogs:** the [Herdr blog](https://herdr.dev/blog/), Simon Willison, GitHub, OpenAI, Hugging Face, Vercel, Cloudflare, Rust, Latent Space, Smashing, Josh Comeau
 - **Tips:** Simon's TIL, tldr-pages, jbranchaud/til (both cloned locally, refreshed every 3 days)
 - **Releases:** Claude Code
 - **Video:** Fireship, Beyond Fireship, ThePrimeTime, Theo, Two Minute Papers, Computerphile, Low Level, Linus Tech Tips, Web Dev Simplified, Kurzgesagt

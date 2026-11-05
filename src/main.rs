@@ -157,7 +157,8 @@ pub fn mark_seen(id: &str) {
 pub fn build_queue(cfg: &Config) -> Vec<Item> {
     let seen = load_seen();
     let mut by_src: Vec<(String, std::collections::VecDeque<Item>)> = Vec::new();
-    // HERDR_FEED_ONLY=video (or tip, news…) narrows the queue; handy for trying one card type
+    // HERDR_FEED_ONLY=video (or tip, news…, or a source such as "Herdr Blog") narrows the queue;
+    // handy for trying one kind of card
     let only = std::env::var("HERDR_FEED_ONLY").ok();
     for it in load_store()
         .items
@@ -171,7 +172,7 @@ pub fn build_queue(cfg: &Config) -> Vec<Item> {
         })
         .filter(|x| match only.as_deref() {
             Some("video") => x.video.is_some(),
-            Some(k) => x.kind == k,
+            Some(k) => x.kind == k || x.source == k,
             None => true,
         })
     {
