@@ -1,0 +1,29 @@
+[package]
+name = "herdr-feed"
+version = "0.1.0"
+edition = "2024"
+description = "A side pane of short tech cards (news, tips, products, videos) beside the active coding agent in Herdr"
+license = "MIT"
+repository = "https://github.com/dmazlum/herdr-feed"
+homepage = "https://github.com/dmazlum/herdr-feed"
+readme = "README.md"
+authors = ["Devrim Mazlum", "Alpcan Aydın <alpcan@reyz.ai> (rexfeed)"]
+keywords = ["claude-code", "terminal", "news", "kitty-graphics", "herdr"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0.104"
+base64 = "0.23.1"
+chrono = { version = "0.4.45", default-features = false, features = ["std", "alloc"] }
+crossterm = "0.29.0"
+fastrand = "2.5.0"
+flate2 = "1.1.10"
+html-escape = "0.3.0"
+libc = "0.2.191"
+regex = "1.13.1"
+roxmltree = "0.21.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha1_smol = "1.0.1"
+textwrap = "0.16.4"
+ureq = "2"

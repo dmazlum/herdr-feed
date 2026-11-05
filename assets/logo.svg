@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="herdr-feed">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2a2c"/>
+      <stop offset="1" stop-color="#121214"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="27.5" fill="none" stroke="#3a3a3d"/>
+  <!-- the card behind -->
+  <rect x="30" y="22" width="70" height="56" rx="9" fill="none" stroke="#5a5a5d" stroke-width="4"/>
+  <!-- the card in front -->
+  <rect x="22" y="34" width="76" height="64" rx="10" fill="#1a1a1c" stroke="#a1a1a3" stroke-width="5"/>
+  <!-- media: play glyph -->
+  <path d="M40 48 l18 11 -18 11 z" fill="#e8875f" stroke="#e8875f" stroke-width="3" stroke-linejoin="round"/>
+  <!-- text lines -->
+  <rect x="66" y="50" width="22" height="5" rx="2.5" fill="#a1a1a3"/>
+  <rect x="66" y="62" width="16" height="5" rx="2.5" fill="#a1a1a3"/>
+  <rect x="34" y="82" width="52" height="5" rx="2.5" fill="#5a5a5d"/>
+  <!-- spark -->
+  <path d="M104 18 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z" fill="#e8875f"/>
+</svg>

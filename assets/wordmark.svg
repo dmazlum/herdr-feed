@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 110" width="600" height="110" role="img" aria-label="herdr-feed">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff7043"/><stop offset="0.5" stop-color="#ff408c"/><stop offset="1" stop-color="#8c5cff"/>
+    </linearGradient>
+  </defs>
+  <text x="300" y="78" text-anchor="middle" fill="url(#g)"
+        font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="84" font-weight="800" letter-spacing="-2">herdr-feed</text>
+</svg>

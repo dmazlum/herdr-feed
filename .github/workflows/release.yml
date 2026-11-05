@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - name: Check the tag
+        run: |
+          printf '%s' "$GITHUB_REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "unexpected tag: $GITHUB_REF_NAME" >&2; exit 1; }
+      - name: Test
+        run: |
+          cargo test --locked
+          node --test test/*.test.js
+      - name: Package
+        id: pack
+        run: |
+          file=$(scripts/package-release.sh "$GITHUB_REF_NAME")
+          case "$file" in build/release/herdr-feed-v*.tar.gz) ;; *) echo "unexpected package path: $file" >&2; exit 1;; esac
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ steps.pack.outputs.file }}
+        run: |
+          notes=$(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\[?"v {f=1; next} /^## / {f=0} f' CHANGELOG.md)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$FILE" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$FILE" \
+              --title "herdr-feed $GITHUB_REF_NAME" --notes "${notes:-See CHANGELOG.md}"
+          fi

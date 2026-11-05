@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Herdr itself
+    url: https://herdr.dev
+    about: Problems with Herdr that happen without herdr-feed belong to Herdr, not here.
+  - name: rexfeed
+    url: https://github.com/alpcanaydin/rexfeed
+    about: The Rex project herdr-feed builds on.
