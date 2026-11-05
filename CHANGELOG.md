@@ -4,6 +4,8 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-05
+
 ### Added
 
 - Linux support, experimental: release packages for `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`, `ctrl-shift-e` / `ctrl-alt-e` keys from `keys.linux.json` (the installer picks the file for the platform), and links opened with `xdg-open`. Not yet tried in the Herdr app on Linux; reports welcome.
@@ -36,5 +38,6 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 - A very small pane no longer underflows the layout math.
 - The card is redrawn when the pane changes size, even where the host sends the program no resize signal (Herdr's split resize doesn't), instead of keeping a layout for the old width.
 
-[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/dmazlum/herdr-feed/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dmazlum/herdr-feed/releases/tag/v0.1.0

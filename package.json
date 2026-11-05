@@ -1,6 +1,6 @@
 {
   "name": "herdr-feed",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Short tech cards (news, tips, products, videos) beside the active coding agent in Herdr while it works.",
