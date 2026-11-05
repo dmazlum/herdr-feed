@@ -30,6 +30,7 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 - `og:image` URLs go through the same http(s) check as every other image URL.
 - Code blocks in tips keep their indentation, and HTML entities are decoded once.
 - A very small pane no longer underflows the layout math.
+- The card is redrawn when the pane changes size, even where the host sends the program no resize signal (Herdr's split resize doesn't), instead of keeping a layout for the old width.
 
 [Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/dmazlum/herdr-feed/releases/tag/v0.1.0

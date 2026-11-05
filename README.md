@@ -13,7 +13,9 @@
   [How it works](#how-it-works) • [Install](#install) • [Usage](#usage) • [Sources](#sources) • [Video](#how-video-works) • [Config](#config) • [FAQ](#faq)
 </div>
 
-<p align="center"><img src="preview.png" alt="herdr-feed beside a working Claude Code agent in Herdr: a TLDR Tech card, the key hint and the switch window"></p>
+<p align="center"><img src="assets/demo.gif" alt="An agent gets a prompt, the feed slides in beside it and plays a video, then a tip card; when the agent is done the feed slides away"></p>
+
+<p align="center"><sub>One agent turn: the feed opens as the agent starts and closes when it's done. The agent pane is a mockup; the feed is recorded from herdr-feed. <a href="assets/demo.mp4">Watch the full video</a> (30 s).</sub></p>
 
 While your agent thinks, you wait. herdr-feed fills that wait: a pane opens beside the agent and
 rotates short tech cards (news, tips, product launches, YouTube and Reddit videos). Images and

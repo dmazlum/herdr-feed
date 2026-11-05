@@ -1018,7 +1018,15 @@ impl Pane {
         let mut last = now();
         let mut last_footer = 0.0;
         let mut paused_since: Option<f64> = None;
+        let mut size = crossterm::terminal::size().ok();
         loop {
+            // Not every host delivers SIGWINCH to the pane's program (Herdr's split resize
+            // doesn't), so watch the size too: a card drawn for another width is garbage.
+            let now_size = crossterm::terminal::size().ok();
+            if now_size != size {
+                size = now_size;
+                self.draw();
+            }
             if event::poll(Duration::from_millis(200)).unwrap_or(false) {
                 match event::read() {
                     Ok(Event::Key(k)) => match k.code {
@@ -1041,7 +1049,10 @@ impl Pane {
                         }
                         _ => {}
                     },
-                    Ok(Event::Resize(..)) => self.draw(),
+                    Ok(Event::Resize(..)) => {
+                        size = crossterm::terminal::size().ok();
+                        self.draw();
+                    }
                     Ok(Event::FocusGained) => self.focused = true,
                     Ok(Event::FocusLost) => self.focused = false,
                     _ => {}
