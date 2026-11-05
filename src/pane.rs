@@ -1,7 +1,7 @@
 use crate::fetch::get_bytes;
 use crate::{Config, Item, build_queue, cache_dir, config, log, mark_seen, now, read_state};
 use base64::Engine;
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers, MouseButton, MouseEventKind};
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -712,45 +712,92 @@ struct Pane {
     prep: Arc<Mutex<HashMap<usize, Prep>>>,
     player: Option<Player>,
     elapsed: f64,
+    /// Everything stops, video included: `space`, or the person is in another tab.
     paused: bool,
     manual_pause: bool,
+    /// The person is in the feed: cards stop moving on their own, videos keep playing.
+    browsing: bool,
     focused: bool,
+    /// The card was drawn before its picture was ready; draw it again once it is.
+    awaiting_picture: bool,
     link_row: usize, // the link sits right under the content, not pinned to the bottom
+    /// Screen rows (1-based) whose click opens the card's link: the title and the picture or
+    /// video. The link row itself is added at click time (the footer may move it).
+    opens: Vec<std::ops::Range<usize>>,
+    /// The mouse pointer is a hand (over something a click opens).
+    hand: bool,
 }
 
 impl Pane {
+    /// Get card `idx` ready (its picture downloaded and converted) on a thread of its own.
     fn prepare(&self, idx: usize) {
-        if idx >= self.queue.len() {
-            return;
+        if let Some(job) = claim(&self.prep, &self.queue, idx) {
+            std::thread::spawn(job);
         }
-        let mut m = self.prep.lock().unwrap();
-        if m.contains_key(&idx) {
-            return;
-        }
-        m.insert(idx, Prep::Pending);
-        let url = self.queue[idx].image.clone();
-        let prep = self.prep.clone();
-        if let Some(v) = self.queue[idx].video.clone() {
-            // fetch the clip ahead so it starts the moment its card shows
-            std::thread::spawn(move || crate::fetch::prefetch_video(&v));
-        }
-        std::thread::spawn(move || {
-            let r = url.and_then(|u| prep_image(&u));
-            prep.lock().unwrap().insert(idx, Prep::Ready(r));
-        });
     }
 
-    fn wait_prep(&self, idx: usize) -> Option<(PathBuf, u32, u32)> {
+    /// Get cards `from..` ready in the background, PREP_WORKERS at a time, so browsing with n/p
+    /// finds their pictures done. Cards already claimed (the neighbours) are skipped.
+    fn warm(&self, from: usize) {
+        let next = Arc::new(std::sync::atomic::AtomicUsize::new(from));
+        let queue = Arc::new(self.queue.clone());
+        for _ in 0..PREP_WORKERS {
+            let (next, queue, prep) = (next.clone(), queue.clone(), self.prep.clone());
+            std::thread::spawn(move || {
+                loop {
+                    let idx = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if idx >= queue.len() {
+                        break;
+                    }
+                    if let Some(job) = claim(&prep, &queue, idx) {
+                        job();
+                    }
+                }
+            });
+        }
+    }
+
+    /// The picture for card `idx` if it's ready, waiting at most `ms` for it.
+    fn picture(&self, idx: usize, ms: u64) -> (Option<(PathBuf, u32, u32)>, bool) {
         let t0 = now();
         loop {
-            if let Some(Prep::Ready(r)) = self.prep.lock().unwrap().get(&idx) {
-                return r.clone();
+            match self.prep.lock().unwrap().get(&idx) {
+                Some(Prep::Ready(r)) => return (r.clone(), true),
+                None => return (None, true),
+                _ => {}
             }
-            if now() - t0 > 4.0 {
-                return None;
+            if (now() - t0) * 1000.0 >= ms as f64 {
+                return (None, false);
             }
-            std::thread::sleep(Duration::from_millis(40));
+            std::thread::sleep(Duration::from_millis(20));
         }
+    }
+
+    /// Set the mouse pointer's shape (OSC 22), only when it changes.
+    fn set_hand(&mut self, hand: bool) {
+        if hand != self.hand {
+            self.hand = hand;
+            out(if hand { POINTER_HAND } else { POINTER_DEFAULT });
+            self.footer();
+        }
+    }
+
+    fn open_link(&self) {
+        let u = &self.queue[self.i].url;
+        if u.starts_with("https://") || u.starts_with("http://") {
+            let _ = Command::new(OPENER).arg(u).spawn();
+        }
+    }
+
+    /// Whether a click on screen row `row` (0-based, as the terminal reports it) opens the link.
+    fn opens_at(&self, row: u16) -> bool {
+        let row = row as usize + 1;
+        let rows = term().rows as usize;
+        row == self.link_row.min(rows - 5) || self.opens.iter().any(|r| r.contains(&row))
+    }
+
+    fn picture_ready(&self, idx: usize) -> bool {
+        matches!(self.prep.lock().unwrap().get(&idx), Some(Prep::Ready(_)))
     }
 
     fn draw(&mut self) {
@@ -763,7 +810,11 @@ impl Pane {
         let width = cols.saturating_sub(8).max(20);
         let (ar, ag, ab) = accent(&it);
         let fg = |r: u8, g: u8, b: u8| format!("\x1b[38;2;{r};{g};{b}m");
-        let img = self.wait_prep(self.i);
+        // Don't hold the card back for its picture: a brief wait covers pictures already on disk;
+        // otherwise draw the text now and the picture when it lands (the run loop redraws).
+        // A video card's picture is only its poster, so the clip doesn't wait for it either.
+        let (img, ready) = self.picture(self.i, PICTURE_WAIT_MS);
+        self.awaiting_picture = !ready && it.video.is_none();
         let has_media = img.is_some() || it.video.is_some();
 
         // header: source pill · age ............ KIND
@@ -791,6 +842,7 @@ impl Pane {
             ),
             String::new(),
         ];
+        let title_at = lines.len() + 2; // lines[n] is drawn on row n + 2
         for l in textwrap::wrap(&it.title, width).into_iter().take(3) {
             lines.push(format!("{BOLD}\x1b[38;2;245;245;245m{l}{RST}"));
         }
@@ -860,6 +912,9 @@ impl Pane {
 
         let top = lines.len() as u16 + 3;
         self.link_row = lines.len() + 3;
+        let title_end = title_at + textwrap::wrap(&it.title, width).len().min(3);
+        self.opens.clear();
+        self.opens.push(title_at..title_end);
         let avail = (rows as u16).saturating_sub(top + 5);
         if avail >= 4 {
             let mw = width as u16;
@@ -867,6 +922,7 @@ impl Pane {
                 let (c, r) = fit(*iw as f64, *ih as f64, mw, avail, &t);
                 if let Ok(data) = std::fs::read(path) {
                     self.link_row = (top + r) as usize + 1;
+                    self.opens.push(top as usize..(top + r) as usize);
                     let left = 5 + (mw - c) / 2;
                     let mut b = format!("\x1b[{top};{left}H").into_bytes();
                     b.extend(kitty(&data, &format!("a=T,f=100,c={c},r={r},C=1,q=2")));
@@ -876,6 +932,7 @@ impl Pane {
             if let Some(v) = &it.video {
                 let (c, r) = fit(16.0, 9.0, mw, avail, &t);
                 self.link_row = (top + r) as usize + 1;
+                self.opens.push(top as usize..(top + r) as usize);
                 self.player = Player::start(v, top, 5 + (mw - c) / 2, c, r, &t, &self.cfg);
                 if let Some(p) = &mut self.player {
                     p.set_paused(self.paused);
@@ -914,11 +971,35 @@ impl Pane {
             .trim_start_matches("https://")
             .trim_start_matches("http://")
             .trim_start_matches("www.");
-        let shown = crate::fetch::truncate(shown, width.saturating_sub(4));
-        let link = format!(
-            "\x1b[38;2;{ar};{ag};{ab}m↗ \x1b[4m\x1b]8;;{}\x1b\\{shown}\x1b]8;;\x1b\\{RST}",
-            it.url
+        // With the pointer over something a click opens, the link lights up and says so: the
+        // pointer itself may not change (not every host passes OSC 22 on).
+        const CUE: &str = "  ← click to open";
+        let room = width.saturating_sub(4);
+        let cue = self.hand && room > CUE.chars().count() + 12;
+        let shown = crate::fetch::truncate(
+            shown,
+            if cue {
+                room - CUE.chars().count()
+            } else {
+                room
+            },
         );
+        let link = if self.hand {
+            format!(
+                "{BOLD}\x1b[38;2;255;255;255m↗ \x1b[4m\x1b]8;;{}\x1b\\{shown}\x1b]8;;\x1b\\{RST}{}",
+                it.url,
+                if cue {
+                    format!("\x1b[38;2;{ar};{ag};{ab}m{CUE}{RST}")
+                } else {
+                    String::new()
+                }
+            )
+        } else {
+            format!(
+                "\x1b[38;2;{ar};{ag};{ab}m↗ \x1b[4m\x1b]8;;{}\x1b\\{shown}\x1b]8;;\x1b\\{RST}",
+                it.url
+            )
+        };
 
         // position dots (window of 9 around current)
         let n = self.queue.len();
@@ -940,12 +1021,14 @@ impl Pane {
         let bar_w = (self.queue.len().min(9) * 2 - 1)
             + 2
             + format!("{}/{}", self.i + 1, self.queue.len()).len();
-        let status = if self.focused {
-            format!("\x1b[38;5;221m⏸  focused · n/p to browse{RST}")
-        } else if self.manual_pause {
+        let status = if self.manual_pause {
             format!("\x1b[38;5;221m⏸  paused · space to resume{RST}")
         } else if self.paused {
             format!("\x1b[38;5;221m⏸  paused · resumes when you're back on the agent{RST}")
+        } else if self.browsing {
+            format!(
+                "\x1b[38;2;{ar};{ag};{ab}m●{RST}{DIM}  browsing · cards move on again when you leave{RST}"
+            )
         } else {
             let filled = ((self.elapsed / total).min(1.0) * bar_w as f64) as usize;
             let mut b = String::new();
@@ -1000,13 +1083,14 @@ impl Pane {
                 crate::spawn_fetch();
                 return false;
             }
+            let from = self.queue.len();
             self.queue.extend(more);
+            self.warm(from);
         }
         self.i = idx;
         self.elapsed = 0.0;
         self.prepare(idx);
         self.prepare(idx + 1);
-        self.prepare(idx + 2);
         self.draw();
         true
     }
@@ -1014,6 +1098,7 @@ impl Pane {
     fn run(&mut self) {
         self.prepare(0);
         self.prepare(1);
+        self.warm(2);
         self.draw();
         let mut last = now();
         let mut last_footer = 0.0;
@@ -1041,12 +1126,24 @@ impl Pane {
                             self.go(self.i as isize - 1);
                         }
                         KeyCode::Char(' ') => self.manual_pause = !self.manual_pause,
-                        KeyCode::Char('o') | KeyCode::Enter => {
-                            let u = &self.queue[self.i].url;
-                            if u.starts_with("https://") || u.starts_with("http://") {
-                                let _ = Command::new(OPENER).arg(u).spawn();
+                        KeyCode::Char('o') | KeyCode::Enter => self.open_link(),
+                        _ => {}
+                    },
+                    // a click on the title, the picture or the link opens it; the wheel browses
+                    Ok(Event::Mouse(m)) => match m.kind {
+                        MouseEventKind::Down(MouseButton::Left) if self.opens_at(m.row) => {
+                            self.open_link()
+                        }
+                        MouseEventKind::ScrollDown => {
+                            if !self.go(self.i as isize + 1) {
+                                break;
                             }
                         }
+                        MouseEventKind::ScrollUp => {
+                            self.go(self.i as isize - 1);
+                        }
+                        // a hand over what a click opens, the usual arrow elsewhere
+                        MouseEventKind::Moved => self.set_hand(self.opens_at(m.row)),
                         _ => {}
                     },
                     Ok(Event::Resize(..)) => {
@@ -1062,9 +1159,16 @@ impl Pane {
             if st.status == "closed" {
                 break;
             }
-            self.paused = self.focused || self.manual_pause || st.status == "paused";
+            // paused: nothing moves (space, or another tab). browsing: the person is in the feed
+            // (Herdr says so through the state; a terminal that reports focus says so too), so
+            // cards wait for n/p but the video plays on.
+            self.paused = self.manual_pause || st.status == "paused";
+            self.browsing = !self.paused && (self.focused || st.status == "browsing");
             if let Some(p) = &mut self.player {
                 p.set_paused(self.paused);
+            }
+            if self.awaiting_picture && self.picture_ready(self.i) {
+                self.draw();
             }
             let t = now();
             if self.paused {
@@ -1074,10 +1178,13 @@ impl Pane {
                 }
             } else {
                 paused_since = None;
-                self.elapsed += t - last;
+                if !self.browsing {
+                    self.elapsed += t - last;
+                }
             }
             last = t;
-            if !self.paused && self.dwell_done() && !self.go(self.i as isize + 1) {
+            if !self.paused && !self.browsing && self.dwell_done() && !self.go(self.i as isize + 1)
+            {
                 break;
             }
             if t - last_footer > 0.5 {
@@ -1086,6 +1193,40 @@ impl Pane {
             }
         }
     }
+}
+
+/// Mouse pointer shapes (OSC 22, as Ghostty, kitty and others take it).
+const POINTER_HAND: &[u8] = b"\x1b]22;pointer\x1b\\";
+const POINTER_DEFAULT: &[u8] = b"\x1b]22;default\x1b\\";
+
+/// Threads getting a batch's pictures ready in the background.
+const PREP_WORKERS: usize = 3;
+/// How long a card waits for its picture before it's drawn without it (filled in later).
+const PICTURE_WAIT_MS: u64 = 120;
+
+/// Mark card `idx` as being prepared and return the work, or None if someone already has it.
+fn claim(
+    prep: &Arc<Mutex<HashMap<usize, Prep>>>,
+    queue: &[Item],
+    idx: usize,
+) -> Option<impl FnOnce() + Send + 'static> {
+    let it = queue.get(idx)?;
+    {
+        let mut m = prep.lock().unwrap();
+        if m.contains_key(&idx) {
+            return None;
+        }
+        m.insert(idx, Prep::Pending);
+    }
+    let (url, video, prep) = (it.image.clone(), it.video.clone(), prep.clone());
+    Some(move || {
+        if let Some(v) = video {
+            // fetch the clip ahead so it starts the moment its card shows
+            crate::fetch::prefetch_video(&v);
+        }
+        let r = url.and_then(|u| prep_image(&u));
+        prep.lock().unwrap().insert(idx, Prep::Ready(r));
+    })
 }
 
 /// The system's "open this link in the browser" command.
@@ -1177,7 +1318,9 @@ pub fn run(key: &str) {
         return;
     }
     let _ = crossterm::terminal::enable_raw_mode();
-    out(b"\x1b[?1049h\x1b[?25l\x1b[?1004h"); // 1004: focus in/out reports
+    // 1004: focus in/out reports; 1003 + 1006: mouse clicks, wheel and motion, SGR-encoded (motion
+    // lets the pointer turn into a hand over links; Shift still selects text in most terminals)
+    out(b"\x1b[?1049h\x1b[?25l\x1b[?1004h\x1b[?1003h\x1b[?1006h");
     let mut pane = Pane {
         key: key.into(),
         cfg,
@@ -1188,7 +1331,11 @@ pub fn run(key: &str) {
         elapsed: 0.0,
         paused: false,
         manual_pause: false,
+        browsing: false,
         focused: false,
+        awaiting_picture: false,
+        opens: Vec::new(),
+        hand: false,
         link_row: 0,
     };
     splash();
@@ -1197,7 +1344,8 @@ pub fn run(key: &str) {
         p.stop();
     }
     mark_seen(&pane.queue[pane.i].id);
-    out(format!("{KITTY_CLEAR}\x1b[?1004l\x1b[?1049l\x1b[?25h").as_bytes());
+    out(POINTER_DEFAULT);
+    out(format!("{KITTY_CLEAR}\x1b[?1006l\x1b[?1003l\x1b[?1004l\x1b[?1049l\x1b[?25h").as_bytes());
     let _ = crossterm::terminal::disable_raw_mode();
     if r.is_err() {
         log("pane panicked");

@@ -3,7 +3,8 @@
 // `mod.open:herdr-feed` puts a small window on screen: the switch. While that
 // window is open it watches the agents. When the focused agent starts working
 // it opens `herdr-feed pane` in a split to its right (keeping your focus on the
-// agent), pauses it while you look at it, and closes it when the agent stops
+// agent), holds its cards while you're in it (videos keep playing), pauses it
+// while you're in another tab, and closes it when the agent stops
 // working or you move to another agent. The cards, images and video are drawn
 // by the herdr-feed binary with the kitty graphics protocol.
 
@@ -41,7 +42,7 @@ export default class Feed extends View {
     this.feed = null;
     this.anchor = null;
     this.dismissed = null;
-    this.paused = null;
+    this.shown = null; // the state the feed was last told
     this.busy = false;
     this.note = null; // "no cards", "not installed"
     // A feed left over from an earlier copy has no anchor we know: start clean.
@@ -65,10 +66,10 @@ export default class Feed extends View {
     if (this.busy) return;
     const feed = findFeed(terminals());
     const feedTab = feed ? panes().find((p) => p.terminal === feed)?.tab ?? null : null;
-    if (!feed) this.paused = null;
+    if (!feed) this.shown = null;
     const out = decide({
       enabled: enabled(), agents: agents(), focused: focused(),
-      feed, feedTab, anchor: this.anchor, dismissed: this.dismissed, paused: this.paused,
+      feed, feedTab, anchor: this.anchor, dismissed: this.dismissed, shown: this.shown,
     });
     const before = `${this.feed}|${this.note}`;
     this.feed = feed;
@@ -92,16 +93,16 @@ export default class Feed extends View {
   }
 
   async act(cx, a, feed) {
-    if (a.type === "pause") {
-      await exec(BIN(), ["state", STATE_KEY, a.paused ? "paused" : "running"]);
-      this.paused = a.paused;
+    if (a.type === "state") {
+      await exec(BIN(), ["state", STATE_KEY, a.state]);
+      this.shown = a.state;
     } else if (a.type === "close") {
       await exec(BIN(), ["state", STATE_KEY, "closed"]).catch(() => null);
       if (await this.waitFor(cx, () => !findFeed(terminals()), EXIT_MS) === false) {
         run("terminal.kill", { terminal: feed });
       }
       this.feed = null;
-      this.paused = null;
+      this.shown = null;
     } else if (a.type === "open") {
       await this.open(cx, a.agent);
     }
@@ -136,7 +137,7 @@ export default class Feed extends View {
       return;
     }
     this.feed = appeared;
-    this.paused = false;
+    this.shown = "running";
     // A split is 50/50; the binary narrows the feed to `pane_ratio` (38%) in the app's layout document.
     await exec(BIN(), ["resize", agent, appeared]).catch(() => null);
   }
@@ -173,7 +174,7 @@ export default class Feed extends View {
     if (this.launcher) return div();
     const on = enabled();
     const [word, color] = !on ? ["off", t.dim]
-      : this.feed ? [this.paused ? "paused" : "showing", this.paused ? t.idle : t.working]
+      : this.feed ? { paused: ["paused", t.idle], browsing: ["browsing", t.accent] }[this.shown] ?? ["showing", t.working]
       : this.note ? [this.note, t.blocked]
       : ["on", t.accent];
     return h_flex().id("root").size_full().px(10).gap(8).items_center().text_size(12)

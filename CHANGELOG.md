@@ -4,6 +4,14 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-05
+
+### Changed
+
+- Clicking into the feed no longer freezes it: cards stop moving on their own (*browsing*), but a video keeps playing and `n`/`p`/`o` work. `space` pauses and resumes everything, including while you're in the feed. Switching to another tab still pauses it all. New state `herdr-feed state KEY browsing`.
+- A click on a card's title, picture or video, or link opens the link in the browser, and the mouse wheel browses cards. Over those parts the link lights up with a "← click to open" cue, and the pointer turns into a hand where the host supports OSC 22 (the Herdr app doesn't yet). Selecting text in the feed now takes `Shift`.
+- `n`/`p` are quick: the batch's pictures are prepared in the background (3 at a time) when the feed opens, and a card whose picture isn't ready is drawn at once, the picture filling in when it lands, instead of waiting up to 4 s.
+
 ## [0.1.1] - 2026-11-05
 
 ### Added
@@ -38,6 +46,7 @@ All notable changes to herdr-feed. The format follows [Keep a Changelog](https:/
 - A very small pane no longer underflows the layout math.
 - The card is redrawn when the pane changes size, even where the host sends the program no resize signal (Herdr's split resize doesn't), instead of keeping a layout for the old width.
 
-[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/dmazlum/herdr-feed/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/dmazlum/herdr-feed/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/dmazlum/herdr-feed/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dmazlum/herdr-feed/releases/tag/v0.1.0

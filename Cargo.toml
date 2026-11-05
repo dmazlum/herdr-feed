@@ -1,6 +1,6 @@
 [package]
 name = "herdr-feed"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "A side pane of short tech cards (news, tips, products, videos) beside the active coding agent in Herdr"
 license = "MIT"

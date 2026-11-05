@@ -1,8 +1,8 @@
 // The decisions behind herdr-feed, kept free of Herdr calls so they can be tested.
 //
 // One feed at a time, beside the active agent: the agent whose pane has focus.
-// It opens when that agent starts working, pauses while you look at it (or at
-// another tab), and closes when its agent stops working or you move to another
+// It opens when that agent starts working, holds its cards while you're in it
+// (videos keep playing), pauses while you're in another tab, and closes when its agent stops working or you move to another
 // agent. Closing it by hand (q) keeps it shut until that agent's next turn.
 
 export const FEED_NAME = "herdr-feed";
@@ -40,12 +40,13 @@ export function canOpenBeside(agent, agents, focused) {
  *   feedTab    the tab the feed's pane is in, or null
  *   anchor     the agent the feed was opened beside, or null
  *   dismissed  an agent whose current turn should not get a feed (closed by hand, no cards)
- *   paused     what the feed was last told: true paused, false running
+ *   shown      the state the feed was last told: running, browsing, paused, or null
  *
  * Returns { actions, anchor, dismissed }. Actions, in order:
  *   { type: "close" }                         tell the feed to close, then kill it
  *   { type: "open", agent }                   open a feed beside that agent
- *   { type: "pause", paused }                 tell the open feed to pause or resume
+ *   { type: "state", state }                  tell the open feed: running, browsing (you're in
+ *                                             it: cards wait, video plays) or paused (another tab)
  */
 export function decide(input) {
   const { enabled, agents = [], focused = null, feed = null, feedTab = null } = input;
@@ -68,8 +69,8 @@ export function decide(input) {
     }
     const looking = focused?.terminal === feed;
     const elsewhere = Boolean(feedTab && focused?.tab && focused.tab !== feedTab);
-    const paused = looking || elsewhere;
-    if (paused !== input.paused) actions.push({ type: "pause", paused });
+    const state = elsewhere ? "paused" : looking ? "browsing" : "running";
+    if (state !== input.shown) actions.push({ type: "state", state });
     return { actions, anchor, dismissed };
   }
 

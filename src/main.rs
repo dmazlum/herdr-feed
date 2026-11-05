@@ -20,7 +20,7 @@ USAGE:
   herdr-feed pane [--key KEY] [--driven]
                                         run the side pane; --driven leaves its state to
                                         the caller (the Herdr mod)
-  herdr-feed state KEY running|paused|closed
+  herdr-feed state KEY running|browsing|paused|closed
                                         drive an open pane (the Herdr mod calls this)
   herdr-feed resize AGENT FEED          give FEED `pane_ratio`% of the row it shares
                                         with AGENT (terminal addresses, e.g. t47 t4g)
@@ -369,7 +369,7 @@ mod tests {
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct PaneState {
-    /// running | paused | closed. Written by whoever drives the pane (the Herdr mod, through
+    /// running | browsing (cards wait, video plays) | paused | closed. Written by whoever drives the pane (the Herdr mod, through
     /// `herdr-feed state`); the pane itself only reads it, so the two never race on the file.
     pub status: String,
 }
@@ -447,7 +447,10 @@ fn main() {
                 eprint!("{HELP}");
                 std::process::exit(2);
             };
-            if !matches!(status.as_str(), "running" | "paused" | "closed") {
+            if !matches!(
+                status.as_str(),
+                "running" | "browsing" | "paused" | "closed"
+            ) {
                 eprintln!("herdr-feed: unknown state {status}");
                 std::process::exit(2);
             }

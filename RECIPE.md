@@ -39,7 +39,8 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
   stays where it's dropped and comes back on the next start until closed. One row, 10px side
   padding, 8px gaps, 12px text: a `⠿` grip in `dim`, then a 7px round dot, **feed** in semibold
   (`foreground`, or `muted` when off) and a state word in `muted`:
-  - *off* (dot `dim`), *on* (dot `accent`), *showing* (dot `working`), *paused* (dot `idle`),
+  - *off* (dot `dim`), *on* (dot `accent`), *showing* (dot `working`), *browsing* (dot `accent`),
+    *paused* (dot `idle`),
   - *no cards*, *not installed*, *could not open* (dot `blocked`).
 - **The feed**: a terminal pane split to the right of the agent, 38% of the row. Inside, drawn by
   the program on a rounded card in the card's tint:
@@ -53,8 +54,9 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
     spelled out as far as the width allows: `n next · p prev · space pause · o open · q close`,
     then `n/p browse · space pause · o open · q close`, `n/p browse · o open · q close`,
     `n/p browse · q close`, `q close`.
-  - While paused the bar becomes `⏸ paused · resumes when you're back on the agent` (or
-    `⏸ paused · space to resume` after `space`).
+  - While browsing the bar becomes `● browsing · cards move on again when you leave` (the dot in
+    the card's color); paused in another tab, `⏸ paused · resumes when you're back on the agent`;
+    after `space`, `⏸ paused · space to resume`.
   - On first open, the FEED wordmark for about a second.
 
 ## How it behaves
@@ -64,13 +66,20 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
 - **idle**, **done** or **blocked** (the feed's agent): the feed closes.
 - Focus moves to another agent: the feed closes, and opens beside that agent if it is working.
 - Focus moves to a plain pane in the same tab: the feed keeps playing.
-- Focus moves into the feed, or to another tab: the feed pauses; coming back resumes it.
+- Focus moves into the feed: *browsing*. Cards stop moving on their own; a video keeps playing;
+  `n`/`p`/`o` work. Coming back to the agent starts the cards again.
+- Focus moves to another tab: the feed pauses, video included; coming back resumes it.
 - `q` in the feed, or the last unseen card shown: the feed closes and stays closed until that
   agent's next turn (it stops working once).
 - Click on the switch's word or dot, or `cmd-alt-e`: off (an open feed closes) and on again. The
   grip and the rest of the window drag it.
 - In the feed: `n` `→` `↓` `l` `j` next, `p` `←` `↑` `h` `k` previous, `space` pause, `o` /
-  `enter` open the link in the browser, `q` / `esc` / `ctrl+c` close. A card stays 10s; a video
+  `enter` open the link in the browser, `q` / `esc` / `ctrl+c` close. A click on the title, the
+  picture or video, or the link line opens the link; the mouse wheel goes to the next or previous
+  card. Over those clickable parts the link line turns bold white with `← click to open` in the
+  card's color, and an OSC 22 `pointer` asks for a hand pointer (back to `default` elsewhere and on
+  exit; the Herdr app ignores OSC 22 today, so the cue is what shows). (The pane turns on mouse reporting with motion, 1003 +
+  1006, so selecting text takes `Shift`.) A card stays 10s; a video
   plays up to 20s, muted.
 - Cards come in batches of 30, round-robin across sources: video, image card, text card,
   repeating; a kind that runs out is filled by the others. Seen cards never come back. With the
@@ -88,7 +97,7 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
   re-check of focus, then `run("terminal.open", { argv: [bin, "pane", "--key", "herdr-app",
   "--driven"], place: "right" })`, `run("pane.focus", { terminal: agent })`, a wait for the
   terminal to appear, and `exec(bin, ["resize", agent, feed])`. Pausing:
-  `exec(bin, ["state", "herdr-app", "paused" | "running"])`. Closing: `state … closed`, then
+  `exec(bin, ["state", "herdr-app", "browsing" | "paused" | "running"])` as focus moves. Closing: `state … closed`, then
   `run("terminal.kill")` if it hasn't exited within 1.5s. On/off is `shared("herdr-feed.enabled")`;
   `nextCommand()` takes `toggle` (`herdr-feed.toggle` in `keys.json`). `close()` kills an open feed.
 - `mods/herdr-feed/lib/core.js`: `findFeed(terminals)` (an argv `…/herdr-feed pane`),
@@ -105,6 +114,8 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
 
 - In the desktop app, terminals report no focus events (`\e[?1004h` gets nothing) and have no
   `HERDR_PANE_ID`, so pausing on focus comes from the mod's `focused()`, not the terminal.
+- Don't block a card on its picture: prepare the batch's pictures in the background (a few at a
+  time) and redraw when the current card's picture lands, or n/p feels slow.
 - Kitty images placed with a negative z-index are drawn under the card's cell background and never
   show: place static images at the default z. Video frames are unaffected.
 - `terminal.open { place: "right" }` splits whatever pane has focus at that moment and always
@@ -131,8 +142,9 @@ backs `keys.json` up to `keys.json.bak-herdr-feed`); `./uninstall.sh` undoes the
   0.38).
 - With unseen clips cached (`herdr-feed fetch` prints `videos N/M cached`), the first card is a
   video that plays; the next cards show a picture, then text.
-- Clicking into the feed shows `⏸ paused …` and the switch reads *paused*; clicking the agent
-  resumes it.
+- Clicking into the feed shows `● browsing …`, the switch reads *browsing*, a video keeps playing
+  and no card moves on by itself; `n` shows the next card with its picture within a moment.
+  Clicking the agent starts the cards again.
 - When the agent finishes, the feed closes and the agent's pane takes the whole row again.
 - `q` closes the feed and it doesn't reopen until the agent's next prompt.
 - Clicking the switch turns it *off*; the next prompt opens nothing.

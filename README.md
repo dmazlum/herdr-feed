@@ -39,7 +39,8 @@ While it is open:
 | Event | Pane |
 |---|---|
 | The focused agent starts working | Opens in a split to its right, at 38% of the width; your focus stays on the agent |
-| You click into the feed, or switch to another tab | Pauses |
+| You click into the feed | Holds the cards so you can read or press `o`; a video keeps playing, `n`/`p` browse, `space` pauses |
+| You switch to another tab | Pauses, video included |
 | The agent goes idle, done or blocked | Closes |
 | You move to another agent | Closes, and opens beside that one if it is working |
 | `q` in the feed, or no unseen cards left | Stays closed until that agent's next turn |
@@ -95,19 +96,23 @@ Send prompts as usual. In the feed:
 |---|---|
 | `n` `→` `↓` `l` `j` | Next card |
 | `p` `←` `↑` `h` `k` | Previous card |
-| `space` | Pause / resume |
-| `o` / `enter` | Open the link in your browser |
+| `space` | Pause / resume everything, video included (works while you're in the feed too) |
+| `o` / `enter`, or a click on the title, the picture or the link (the link lights up and says "click to open" while the pointer is over them) | Open the link in your browser |
+| Mouse wheel | Next / previous card |
 | `q` / `esc` / `ctrl+c` | Close the pane |
 
-The bottom row spells these out as far as the pane's width allows. The link line is also an OSC 8
-hyperlink, so `⌘`-click opens it too.
+The bottom row spells these out as far as the pane's width allows. While you're in the feed it
+reads `● browsing`: cards wait for you and move on again once you're back on the agent. A batch's
+pictures are prepared in the background as soon as the feed opens, so `n`/`p` show them at once;
+a card whose picture isn't ready yet is drawn right away and the picture fills in. The feed takes mouse clicks and
+the wheel itself, so to select text in it hold `Shift` while you drag.
 
 ```
 herdr-feed fetch                      refresh the cache (~/.cache/herdr-feed)
 herdr-feed ready                      exit 0 when there are unseen cards
 herdr-feed pane [--key KEY] [--driven]
                                       run the pane by hand (any kitty-graphics terminal)
-herdr-feed state KEY running|paused|closed
+herdr-feed state KEY running|browsing|paused|closed
                                       drive an open pane (the mod calls this)
 herdr-feed resize AGENT FEED          give FEED pane_ratio% of the row it shares with AGENT
 herdr-feed list                       print cached items

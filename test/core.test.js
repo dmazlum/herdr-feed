@@ -5,7 +5,7 @@ import { decide, findFeed, canOpenBeside } from "../mods/herdr-feed/lib/core.js"
 const agent = (address, status, focused = false, tab = "tb1") => ({ address, status, focused, tab });
 const focus = (terminal, tab = "tb1", pane = "p1") => ({ terminal, tab, pane });
 const types = (out) => out.actions.map((a) => a.type);
-const base = { enabled: true, feed: null, feedTab: null, anchor: null, dismissed: null, paused: null };
+const base = { enabled: true, feed: null, feedTab: null, anchor: null, dismissed: null, shown: null };
 
 test("finds the feed by its name or its command line", () => {
   assert.equal(findFeed([{ address: "t1", argv: ["zsh"] }, { address: "t2", name: "herdr-feed" }]), "t2");
@@ -47,25 +47,26 @@ test("closes when its agent is gone or the switch is turned off", () => {
 
 test("closes when another agent becomes the active one", () => {
   const out = decide({
-    ...base, feed: "t2", feedTab: "tb1", anchor: "t1", paused: false,
+    ...base, feed: "t2", feedTab: "tb1", anchor: "t1", shown: "running",
     agents: [agent("t1", "working"), agent("t3", "working", true)], focused: focus("t3"),
   });
   assert.deepEqual(types(out), ["close"]);
 });
 
 test("stays open, running, while you work in a plain pane of the same tab", () => {
-  const out = decide({ ...base, feed: "t2", feedTab: "tb1", anchor: "t1", paused: false, agents: [agent("t1", "working")], focused: focus("t5") });
+  const out = decide({ ...base, feed: "t2", feedTab: "tb1", anchor: "t1", shown: "running", agents: [agent("t1", "working")], focused: focus("t5") });
   assert.deepEqual(types(out), []);
   assert.equal(out.anchor, "t1");
 });
 
-test("pauses while you look at it or at another tab, and resumes after", () => {
+test("holds its cards while you're in it, pauses in another tab, and runs again after", () => {
   const s = { ...base, feed: "t2", feedTab: "tb1", anchor: "t1", agents: [agent("t1", "working")] };
-  assert.deepEqual(decide({ ...s, paused: false, focused: focus("t2") }).actions, [{ type: "pause", paused: true }]);
-  assert.deepEqual(decide({ ...s, paused: false, focused: focus("t7", "tb2") }).actions, [{ type: "pause", paused: true }]);
-  assert.deepEqual(decide({ ...s, paused: true, focused: focus("t2") }).actions, []);
-  const back = { ...s, agents: [agent("t1", "working", true)], paused: true, focused: focus("t1") };
-  assert.deepEqual(decide(back).actions, [{ type: "pause", paused: false }]);
+  assert.deepEqual(decide({ ...s, shown: "running", focused: focus("t2") }).actions, [{ type: "state", state: "browsing" }]);
+  assert.deepEqual(decide({ ...s, shown: "running", focused: focus("t7", "tb2") }).actions, [{ type: "state", state: "paused" }]);
+  assert.deepEqual(decide({ ...s, shown: "browsing", focused: focus("t7", "tb2") }).actions, [{ type: "state", state: "paused" }]);
+  assert.deepEqual(decide({ ...s, shown: "browsing", focused: focus("t2") }).actions, []);
+  const back = { ...s, agents: [agent("t1", "working", true)], shown: "browsing", focused: focus("t1") };
+  assert.deepEqual(decide(back).actions, [{ type: "state", state: "running" }]);
 });
 
 test("a feed closed by hand stays shut for the rest of that turn", () => {
